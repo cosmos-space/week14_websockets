@@ -1,0 +1,151 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 14: Real-time WebSockets</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Real-Time Push Notification Alert Banner -->
+    <div id="notification-banner" class="hidden">
+        <span class="bell-icon">🔔</span>
+        <span id="notification-text">System update notice appears here...</span>
+        <button onclick="closeNotification()">×</button>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <h1>Local WebSockets Chat</h1>
+            <div class="status-indicator">
+                <span id="status-dot" class="dot disconnected"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Username setup -->
+        <div class="form-group inline">
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Guest" value="Student">
+        </div>
+
+        <!-- Chat Screen Log -->
+        <div id="chat-box" class="chat-box"></div>
+
+        <!-- Message composer -->
+        <div class="composer">
+            <input type="text" id="message-input" placeholder="Type a message..." disabled>
+            <button id="send-btn" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const usernameInput = document.getElementById('username');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const banner = document.getElementById('notification-banner');
+        const bannerText = document.getElementById('notification-text');
+
+        // Connect to local WebSocket Server using browser native WS API
+        // ws:// protocol is utilized instead of http://
+        function connectWS() {
+            socket = new WebSocket('ws://localhost:3000');
+
+            socket.onopen = () => {
+                statusDot.className = 'dot connected';
+                statusText.textContent = 'Connected';
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                appendSystemMsg("System: Stable connection established with server.");
+            };
+
+            socket.onmessage = (event) => {
+                const payload = JSON.parse(event.data);
+
+                if (payload.type === 'system') {
+                    appendSystemMsg(payload.message);
+                } else if (payload.type === 'chat') {
+                    appendChatMsg(payload);
+                } else if (payload.type === 'notification') {
+                    triggerAlert(payload.message, payload.timestamp);
+                }
+            };
+
+            socket.onclose = () => {
+                // Task 4 challenge: show reconnection UI state
+                statusDot.className = 'dot warning';
+                statusText.textContent = 'Attempting Reconnection...';
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                appendSystemMsg("System: Network connection dropped. Attempting to reconnect...");
+
+                setTimeout(connectWS, 3000); // Attempt auto-recovery
+            };
+        }
+
+        function appendSystemMsg(msg) {
+            const el = document.createElement('div');
+            el.className = 'msg system';
+            el.textContent = msg;
+            chatBox.appendChild(el);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendChatMsg(payload) {
+            const el = document.createElement('div');
+            el.className = 'msg bubble-wrapper';
+            
+            const isMe = payload.username === usernameInput.value;
+            el.innerHTML = `
+                <div class="bubble ${isMe ? 'me' : 'other'}">
+                    <div class="meta">${payload.username} <span class="time">${payload.timestamp}</span></div>
+                    <div class="body-text"></div>
+                </div>
+            `;
+            // Safe assignment preventing XSS injection
+            el.querySelector('.body-text').textContent = payload.message;
+            chatBox.appendChild(el);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function triggerAlert(message, time) {
+            bannerText.innerHTML = `<strong>System Alert [${time}]:</strong> <span id="raw-text"></span>`;
+            bannerText.querySelector('#raw-text').textContent = message;
+            banner.className = 'visible';
+        }
+
+        function closeNotification() {
+            banner.className = 'hidden';
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            const payload = {
+                username: usernameInput.value || 'Anonymous',
+                message: text
+            };
+
+            socket.send(JSON.stringify(payload));
+            messageInput.value = '';
+        }
+
+        // Action Listeners
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Initialize connection
+        connectWS();
+    </script>
+</body>
+</html>
+
