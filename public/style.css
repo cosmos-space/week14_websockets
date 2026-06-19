@@ -540,6 +540,16 @@ body::after {
   border-radius: 50%;
 }
 
+/* Consistent sizing for group avatars in rooms list */
+.room-icon-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+
 /* Glassmorphic Modal */
 .modal-overlay {
   position: fixed;

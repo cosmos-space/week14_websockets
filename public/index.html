@@ -437,7 +437,7 @@
       loungeEl.onclick = () => switchRoom('lounge');
       loungeEl.innerHTML = `
         <div class="avatar-wrapper">
-          <span class="room-icon-badge"></span>
+          <span class="room-icon-badge">💬</span>
         </div>
         <div class="online-user-name">Lounge Chat</div>
         ${unreadLounge}
@@ -454,8 +454,8 @@
         el.onclick = () => switchRoom(groupRoomId);
 
         const avatarHtml = group.avatar
-          ? `<img src="${group.avatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
-          : `<span class="room-icon-badge"></span>`;
+          ? `<img src="${group.avatar}" class="room-icon-avatar" alt="${group.name}">`
+          : `<span class="room-icon-badge">👥</span>`;
 
         el.innerHTML = `
           <div class="avatar-wrapper">${avatarHtml}</div>
@@ -521,7 +521,7 @@
         if (groupObj) {
           const avatarHtml = groupObj.avatar
             ? `<img src="${groupObj.avatar}" style="width: 24px; height: 24px; border-radius: 5px; vertical-align: middle; margin-right: 8px;">`
-            : ' ';
+            : '👥 ';
           activeChatTitle.innerHTML = `${avatarHtml}${groupObj.name}`;
           activeChatSubtitle.textContent = `${groupObj.members.length} members (Group Chat)`;
 
